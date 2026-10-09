@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 export function Icon({ name = "arrow", size = 20, ...props }) {
   const paths = {
     arrow: (
@@ -93,6 +93,17 @@ export function Icon({ name = "arrow", size = 20, ...props }) {
       </>
     ),
     close: <path d="m6 6 12 12M6 18 18 6" />,
+    external: (
+      <>
+        <path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" />
+      </>
+    ),
+    layers: (
+      <>
+        <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+        <path d="m3 13 9 5 9-5" />
+      </>
+    ),
   };
   return (
     <svg
@@ -189,8 +200,8 @@ export function EmptyConsentNote({ manual, onApply }) {
       <Icon name="info" />
       <p>
         {manual
-          ? "Manual exploration. Consent is not active; this calculation uses only the values you choose in this demo."
-          : "Reference scenario. Explore the synthetic fixture, or record consent on Apply to use your saved demo profile."}
+          ? "Manual exploration. Consent is not active; this calculation uses only the values you enter."
+          : "Reference scenario. Explore it here, or record consent on Apply to use your saved profile."}
       </p>
       <button className="asc-text-button" onClick={onApply}>
         Go to Apply <Icon size={15} />

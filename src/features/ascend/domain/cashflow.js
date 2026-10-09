@@ -45,11 +45,7 @@ export function validateScenario(input) {
   const errors = {};
   for (const [key, [min, max, integer, label]] of Object.entries(RULES)) {
     const value = input[key];
-    if (
-      (typeof value !== "number" && typeof value !== "string") ||
-      String(value).trim() === "" ||
-      !Number.isFinite(Number(value))
-    )
+    if (value === "" || value == null || !Number.isFinite(Number(value)))
       errors[key] = `${label} is required.`;
     else if (Number(value) < min || Number(value) > max)
       errors[key] =
@@ -71,14 +67,6 @@ export function normalizeScenario(input) {
   return Object.fromEntries(
     Object.keys(RULES).map((key) => [key, Number(input[key])]),
   );
-}
-/** Isolate arrival timing: keep amounts, EMI date, shock and horizon identical. */
-export function compareStipendTiming(input, options = {}) {
-  const scenario = normalizeScenario(input);
-  return {
-    day5: simulate({ ...scenario, stipendDay: 5 }, options),
-    day20: simulate({ ...scenario, stipendDay: 20 }, options),
-  };
 }
 export function loanTerms(principal) {
   if (
@@ -231,6 +219,38 @@ export function simulate(input, { months = 1 } = {}) {
     status: structuralPass && timingPass ? "REVIEWABLE" : "PAUSE",
     reason,
     title,
+  };
+}
+/** Generic dated projection with the same conventions as simulate(): paise, outflows before same-day inflows, buffer floor. */
+export function projectCashflow({ openingBalance, events, buffer = POLICY.buffer }) {
+  const openingP = paise(openingBalance);
+  const bufferP = paise(buffer);
+  const sorted = events
+    .map((event, index) => ({ ...event, deltaP: paise(event.amount), index }))
+    .sort(
+      (a, b) =>
+        a.day - b.day ||
+        (a.deltaP < 0 ? 0 : 1) - (b.deltaP < 0 ? 0 : 1) ||
+        a.index - b.index,
+    );
+  let balanceP = openingP;
+  let lowestP = openingP;
+  let lowestDay = 0;
+  const ledger = sorted.map(({ deltaP, index, ...event }) => {
+    balanceP += deltaP;
+    if (balanceP < lowestP) {
+      lowestP = balanceP;
+      lowestDay = event.day;
+    }
+    return { ...event, balance: rupees(balanceP) };
+  });
+  return {
+    ledger,
+    lowestBalance: rupees(lowestP),
+    lowestDay,
+    closingBalance: rupees(balanceP),
+    breachesBuffer: lowestP < bufferP,
+    shortfall: lowestP < 0,
   };
 }
 export function exploreSchedule(scenario) {

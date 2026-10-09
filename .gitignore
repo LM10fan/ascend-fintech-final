@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .test-build/
+scripts/.cache/
 .env
 .env.*
 !.env.example

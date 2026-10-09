@@ -1,9 +1,6 @@
-import {
-  DEFAULT_SCENARIO,
-  normalizeScenario,
-  validateScenario,
-} from "../domain/cashflow.js";
-import { defaultLender, sanitizeLender } from "./lender.js";
+﻿import { defaultLender, sanitizeLender } from "./lender.js";
+import { DEFAULT_SCENARIO, normalizeScenario, validateScenario } from "../domain/cashflow.js";
+import { defaultCredit, sanitizeCredit } from "./creditState.js";
 export const STORE_KEY = "ascend:apply-lab:v1";
 export const CONSENT_VERSION = "demo-consent-v1";
 export const PROFILES = Object.freeze([
@@ -13,11 +10,11 @@ export const PROFILES = Object.freeze([
     initials: "AS",
     age: 21,
     city: "Mumbai",
-    campus: "Sample Institute · Mumbai",
-    email: "aarav@example.test",
-    parentPan: "DEMO-PARENT-001",
-    ownPan: "DEMO-SELF-001",
-    aadhaar: "DEMO-AADHAAR-001",
+    campus: "Undergraduate · Mumbai",
+    email: "aarav@mail.ascend.test",
+    parentPan: "XXXXX4821K",
+    ownPan: "XXXXX7310A",
+    aadhaar: "XXXX XXXX 4821",
   },
   {
     id: "mira",
@@ -25,22 +22,74 @@ export const PROFILES = Object.freeze([
     initials: "MR",
     age: 23,
     city: "Pune",
-    campus: "Sample Institute · Pune",
-    email: "mira@example.test",
-    parentPan: "DEMO-PARENT-002",
-    ownPan: "DEMO-SELF-002",
-    aadhaar: "DEMO-AADHAAR-002",
+    campus: "Postgraduate · Pune",
+    email: "mira@mail.ascend.test",
+    parentPan: "XXXXX0937P",
+    ownPan: "XXXXX5162B",
+    aadhaar: "XXXX XXXX 0937",
+  },
+  {
+    id: "riya",
+    name: "Riya Verma",
+    initials: "RV",
+    age: 20,
+    city: "Delhi",
+    campus: "Undergraduate · Delhi",
+    email: "riya@mail.ascend.test",
+    parentPan: "XXXXX2284M",
+    ownPan: "XXXXX8845C",
+    aadhaar: "XXXX XXXX 2284",
+  },
+  {
+    id: "kabir",
+    name: "Kabir Mehta",
+    initials: "KM",
+    age: 29,
+    city: "Bengaluru",
+    campus: "Salaried · Technology",
+    email: "kabir@mail.ascend.test",
+    parentPan: "XXXXX6601R",
+    ownPan: "XXXXX3329D",
+    aadhaar: "XXXX XXXX 6601",
+  },
+  {
+    id: "dev",
+    name: "Dev Rathore",
+    initials: "DR",
+    age: 22,
+    city: "Jaipur",
+    campus: "Undergraduate · Jaipur",
+    email: "dev@mail.ascend.test",
+    parentPan: "XXXXX1457T",
+    ownPan: "XXXXX9073E",
+    aadhaar: "XXXX XXXX 1457",
+  },
+  {
+    id: "neha",
+    name: "Neha Singh",
+    initials: "NS",
+    age: 26,
+    city: "Lucknow",
+    campus: "Salaried · Retail",
+    email: "neha@mail.ascend.test",
+    parentPan: "XXXXX5590S",
+    ownPan: "XXXXX4418F",
+    aadhaar: "XXXX XXXX 5590",
   },
 ]);
 export const LENDER = Object.freeze({
-  name: "Campus Finance · Demo",
-  email: "reviewer@example.test",
-  id: "DEMO-LENDER-001",
+  name: "Campus Finance",
+  email: "reviewer@mail.ascend.test",
+  id: "ASC-PARTNER-001",
 });
 export const PURPOSES = [
   "Laptop repair",
   "Course materials",
   "Skills certification",
+  "Material purchase",
+  "Coaching",
+  "Expenses",
+  "Miscellaneous",
 ];
 export const emptyConsents = () => ({
   evidence: false,
@@ -61,6 +110,16 @@ export function defaultSession() {
     mode: "reference",
     lenderRegistered: false,
     lender: defaultLender(),
+    credit: defaultCredit("aarav"),
+  };
+}
+/** A different applicant never inherits another applicant's consent or financial data. */
+export function switchProfile(session, profileId) {
+  return {
+    ...withdrawConsent(session),
+    profileId,
+    mode: "reference",
+    credit: defaultCredit(profileId),
   };
 }
 function cleanConsent(value) {
@@ -94,7 +153,7 @@ export function hasConsent(session) {
   );
 }
 export function sanitizeSession(raw) {
-  if (!raw || raw.version !== 1) throw new Error("Unsupported demo version.");
+  if (!raw || raw.version !== 1) throw new Error("Unsupported saved data version.");
   const session = defaultSession();
   session.role = raw.role === "lender" ? "lender" : "applicant";
   session.profileId = PROFILES.some((item) => item.id === raw.profileId)
@@ -103,25 +162,6 @@ export function sanitizeSession(raw) {
   session.history = raw.history === "existing" ? "existing" : "first";
   session.purpose = PURPOSES.includes(raw.purpose) ? raw.purpose : PURPOSES[0];
   session.scenario = normalizeScenario(raw.scenario);
-  session.inputDraft = Object.fromEntries(
-    Object.keys(DEFAULT_SCENARIO).map((key) => {
-      const value = raw.inputDraft?.[key] ?? session.scenario[key];
-      return [
-        key,
-        typeof value === "number" && Number.isFinite(value)
-          ? value
-          : typeof value === "string" &&
-              value.length <= 32 &&
-              /^[\d.eE+\-]*$/.test(value)
-            ? value
-            : "",
-      ];
-    }),
-  );
-  // A valid draft is authoritative; invalid drafts never enter the engine.
-  if (!Object.keys(validateScenario(session.inputDraft)).length)
-    session.scenario = normalizeScenario(session.inputDraft);
-  if (Number(session.inputDraft.existingDebt) > 0) session.history = "existing";
   session.consent = cleanConsent(raw.consent);
   session.mode = ["manual", "consented", "reference"].includes(raw.mode)
     ? raw.mode
@@ -136,47 +176,22 @@ export function sanitizeSession(raw) {
   )
     session.mode = "reference";
   session.lenderRegistered = raw.lenderRegistered === true;
+  session.credit = sanitizeCredit(raw.credit, session.profileId);
   session.lender = sanitizeLender(raw.lender);
   session.lenderRegistered ||= session.lender.status === "verified";
-  const choices =
-    raw.consentChoices ??
-    (hasConsent(session) ? session.consent.scopes : emptyConsents());
-  session.consentChoices = Object.fromEntries(
-    Object.keys(emptyConsents()).map((key) => [key, choices[key] === true]),
-  );
-  if (
-    hasConsent(session) &&
-    Object.keys(emptyConsents()).some(
-      (key) => session.consentChoices[key] !== session.consent.scopes[key],
-    )
-  )
-    return {
-      ...withdrawConsent(session),
-      consentChoices: session.consentChoices,
-    };
+  session.inputDraft = Object.fromEntries(Object.keys(DEFAULT_SCENARIO).map((key) => {
+    const value = raw.inputDraft?.[key] ?? session.scenario[key];
+    return [key, (typeof value === "number" && Number.isFinite(value)) ||
+      (typeof value === "string" && value.length <= 32 && /^[\d.eE+\-]*$/.test(value))
+      ? value : session.scenario[key]];
+  }));
+  if (!Object.keys(validateScenario(session.inputDraft)).length)
+    session.scenario = normalizeScenario(session.inputDraft);
+  const choices = raw.consentChoices ?? (hasConsent(session) ? session.consent.scopes : emptyConsents());
+  session.consentChoices = Object.fromEntries(Object.keys(emptyConsents()).map(key => [key, choices[key] === true]));
+  if (hasConsent(session) && Object.keys(emptyConsents()).some(key => session.consentChoices[key] !== session.consent.scopes[key]))
+    return { ...withdrawConsent(session), consentChoices: session.consentChoices };
   return session;
-}
-/** Shared editable values survive route changes, including a temporarily empty field. */
-export function updateScenarioInputs(session, changes) {
-  const inputDraft = {
-    ...(session.inputDraft ?? session.scenario),
-    ...changes,
-  };
-  const valid = !Object.keys(validateScenario(inputDraft)).length;
-  return {
-    ...session,
-    inputDraft,
-    scenario: valid ? normalizeScenario(inputDraft) : session.scenario,
-    history: Number(inputDraft.existingDebt) > 0 ? "existing" : session.history,
-  };
-}
-export function setConsentChoice(session, key, checked) {
-  if (!(key in emptyConsents())) throw new Error("Unknown consent scope.");
-  const consentChoices = { ...session.consentChoices, [key]: checked === true };
-  return {
-    ...(hasConsent(session) ? withdrawConsent(session) : session),
-    consentChoices,
-  };
 }
 /** Swap this adapter with an authenticated API later. Identity is always an allowlisted fixture. */
 export function createDemoStore(storage) {
@@ -188,13 +203,13 @@ export function createDemoStore(storage) {
           session: raw ? sanitizeSession(JSON.parse(raw)) : defaultSession(),
           warning: storage
             ? ""
-            : "Browser storage is unavailable. This demo will last for this session only.",
+            : "Browser storage is unavailable. Your progress will last for this session only.",
         };
       } catch {
         return {
           session: defaultSession(),
           warning:
-            "Saved demo data could not be read. A fresh reference scenario is open.",
+            "Saved data could not be read. A fresh reference scenario is open.",
         };
       }
     },
@@ -241,11 +256,7 @@ export function recordConsent(session, scopes, now = new Date().toISOString()) {
   return {
     ...session,
     mode: "consented",
-    consentChoices: {
-      evidence: true,
-      cashflow: true,
-      bureau: scopes.bureau === true,
-    },
+    consentChoices: { evidence: true, cashflow: true, bureau: scopes.bureau === true },
     consent: {
       version: CONSENT_VERSION,
       scopes: {
@@ -266,5 +277,28 @@ export function withdrawConsent(session, now = new Date().toISOString()) {
     consent: session.consent
       ? { ...session.consent, scopes: emptyConsents(), revokedAt: now }
       : null,
+  };
+}
+
+/** Shared editable values survive route changes, including a temporarily empty field. */
+export function updateScenarioInputs(session, changes) {
+  const inputDraft = {
+    ...(session.inputDraft ?? session.scenario),
+    ...changes,
+  };
+  const valid = !Object.keys(validateScenario(inputDraft)).length;
+  return {
+    ...session,
+    inputDraft,
+    scenario: valid ? normalizeScenario(inputDraft) : session.scenario,
+    history: Number(inputDraft.existingDebt) > 0 ? "existing" : session.history,
+  };
+}
+export function setConsentChoice(session, key, checked) {
+  if (!(key in emptyConsents())) throw new Error("Unknown consent scope.");
+  const consentChoices = { ...session.consentChoices, [key]: checked === true };
+  return {
+    ...(hasConsent(session) ? withdrawConsent(session) : session),
+    consentChoices,
   };
 }

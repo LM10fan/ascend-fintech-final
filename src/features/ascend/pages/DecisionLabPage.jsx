@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import {
   Badge,
   EmptyConsentNote,
@@ -6,44 +6,28 @@ import {
   NumberField,
 } from "../components/ui.jsx";
 import { CashflowChart } from "../components/CashflowChart.jsx";
-import { StipendComparison } from "../components/StipendComparison.jsx";
 import {
   DEFAULT_SCENARIO,
   MODEL_VERSION,
   POLICY,
   exploreSchedule,
   money,
+  normalizeScenario,
   simulate,
   validateScenario,
 } from "../domain/cashflow.js";
-import {
-  PROFILES,
-  hasConsent,
-  updateScenarioInputs,
-} from "../data/demoStore.js";
+import { PROFILES, hasConsent } from "../data/demoStore.js";
+import { downloadJson } from "../components/download.js";
 function dayLabel(day) {
   return day === 0 ? "before day 1" : `on day ${day}`;
-}
-function downloadJson(data) {
-  const url = URL.createObjectURL(
-    new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
-  );
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "ascend-synthetic-decision.json";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function DecisionLabPage({ session, update, navigate, notify }) {
   const scenario = session.scenario;
   const [months, setMonths] = useState(1);
   const [compare, setCompare] = useState(false);
   const [proposedDay, setProposedDay] = useState(24);
-  const draft = session.inputDraft ?? scenario;
-  const errors = validateScenario(draft);
-  const readOnly = session.role === "lender";
+  const [draft, setDraft] = useState({ ...scenario });
+  const [errors, setErrors] = useState({});
   const [nextOpen, setNextOpen] = useState(false);
   const result = useMemo(
     () => simulate(scenario, { months }),
@@ -56,24 +40,34 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
   );
   const schedule = useMemo(() => exploreSchedule(scenario), [scenario]);
   const baseline = compare
-    ? simulate({ ...scenario, stipendDay: 5 }, { months })
+    ? simulate({ ...scenario, stipendDay: 5, shock: 0 }, { months })
     : null;
   const invalid = Object.values(errors).some(Boolean);
   const active = hasConsent(session);
   const profile =
     PROFILES.find((item) => item.id === session.profileId) ?? PROFILES[0];
   function commit(next) {
-    if (readOnly) return;
-    update(updateScenarioInputs(session, next), true);
+    setDraft({ ...next });
+    setErrors({});
+    update(
+      { ...session, scenario: normalizeScenario(next), inputDraft: normalizeScenario(next) },
+      active || session.mode === "manual" || session.lenderRegistered,
+    );
   }
   function edit(key, value) {
-    if (readOnly) return;
-    update(updateScenarioInputs(session, { [key]: value }), true);
+    const next = { ...draft, [key]: value };
+    setDraft(next);
+    const nextErrors = validateScenario(next);
+    setErrors(nextErrors);
+    if (!Object.keys(nextErrors).length)
+      update(
+        { ...session, scenario: normalizeScenario(next), inputDraft: normalizeScenario(next) },
+        active || session.mode === "manual" || session.lenderRegistered,
+      );
   }
   function exportDecision() {
     try {
       downloadJson({
-        synthetic: true,
         modelVersion: MODEL_VERSION,
         generatedAt: new Date().toISOString(),
         purpose: session.purpose,
@@ -85,32 +79,15 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
         horizonDays: result.horizon,
         result: { ...result, scenario: undefined, points: undefined },
         fullTermStatus: fullTerm.status,
-        note: "Illustrative advisory only. Not a loan approval, KYC record or lender offer.",
-      });
-      notify("Synthetic decision receipt downloaded.");
+        note: "Advisory only. Not a loan approval, KYC record or lender offer.",
+      }, "ascend-decision.json");
+      notify("Decision receipt downloaded.");
     } catch {
       notify(
         "Download was unavailable in this browser. The complete event ledger is shown below.",
       );
     }
   }
-  if (readOnly && (session.lender?.status !== "verified" || !active || invalid))
-    return (
-      <section className="asc-card asc-assessment">
-        <div className="asc-eyebrow">LENDER REVIEW · SYNTHETIC ONLY</div>
-        <h1>Complete the review prerequisites.</h1>
-        <p>
-          Simulated lender verification, active applicant consent and valid
-          applicant inputs are required for the read-only assessment.
-        </p>
-        <button
-          className="asc-button primary"
-          onClick={() => navigate("/apply")}
-        >
-          Return to Apply & Consent <Icon />
-        </button>
-      </section>
-    );
   return (
     <>
       <header className="asc-page-heading lab">
@@ -132,21 +109,11 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             <strong>{profile.name}</strong>
             <span>
               {profile.city} ·{" "}
-              {session.role === "lender" ? "Reviewer view" : "Demo applicant"}
+              {session.role === "lender" ? "Reviewer view" : "Applicant"}
             </span>
           </div>
-          <Badge tone="green">SYNTHETIC</Badge>
         </div>
       </header>
-      {readOnly && (
-        <div className="asc-inline-note">
-          <Icon name="lock" />
-          <span>
-            Read-only reviewer view. Applicant values cannot be changed here.
-            Comparison horizons and uncommitted date previews remain explorable.
-          </span>
-        </div>
-      )}
       {!active ? (
         <EmptyConsentNote
           manual={session.mode === "manual"}
@@ -155,7 +122,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
       ) : (
         <div className="asc-consent-strip">
           <Icon name="shield" size={16} />
-          <span>Consent active · synthetic cash-flow evidence</span>
+          <span>Consent active · cash-flow evidence</span>
           <button
             className="asc-text-button"
             onClick={() => navigate("/apply")}
@@ -164,6 +131,26 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
           </button>
         </div>
       )}
+      {session.credit.labLinked &&
+        Object.keys(scenario).every(
+          (key) => scenario[key] === session.credit.labLinked.scenario[key],
+        ) && (
+          <div className="asc-consent-strip">
+            <Icon name="layers" size={16} />
+            <span>
+              Loaded from your AA analysis · Level{" "}
+              {session.credit.labLinked.level} limit, capped to the Lab's
+              ₹1,000–₹10,000 range. Income is shown net of other observed
+              spending.
+            </span>
+            <button
+              className="asc-text-button"
+              onClick={() => navigate("/assessment")}
+            >
+              Back to assessment <Icon size={14} />
+            </button>
+          </div>
+        )}
       <section className="asc-scenario-bar" aria-label="Stress test scenarios">
         <div className="asc-scenario-label">
           <Icon name="spark" size={18} />
@@ -171,17 +158,19 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
         </div>
         <div className="asc-scenario-buttons">
           <button
-            disabled={readOnly || invalid}
-            className={scenario.stipendDay === 5 ? "selected" : ""}
-            aria-pressed={scenario.stipendDay === 5}
-            onClick={() => commit({ ...scenario, stipendDay: 5 })}
+            className={
+              scenario.stipendDay === 5 && scenario.shock === 0
+                ? "selected"
+                : ""
+            }
+            aria-pressed={scenario.stipendDay === 5 && scenario.shock === 0}
+            onClick={() => commit({ ...scenario, stipendDay: 5, shock: 0 })}
           >
             <span className="asc-scenario-dot green" />
             Stipend on 5th
           </button>
           <button
             className={scenario.stipendDay === 20 ? "selected warm" : ""}
-            disabled={readOnly || invalid}
             aria-pressed={scenario.stipendDay === 20}
             onClick={() => commit({ ...scenario, stipendDay: 20 })}
           >
@@ -189,7 +178,6 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             Delay to 20th
           </button>
           <button
-            disabled={readOnly || invalid}
             className={scenario.shock === 600 ? "selected warm" : ""}
             aria-pressed={scenario.shock === 600}
             onClick={() =>
@@ -205,7 +193,6 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
         </div>
         <button
           className="asc-reset"
-          disabled={readOnly}
           onClick={() => {
             commit({ ...DEFAULT_SCENARIO });
             setProposedDay(24);
@@ -219,11 +206,6 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
           Reset scenario
         </button>
       </section>
-      <p className="asc-shock-summary" role="status">
-        {scenario.shock > 0
-          ? `Expense shock active: ${money(scenario.shock)} on day ${scenario.shockDay}, once only—even in the 90-day view.`
-          : "Expense shock off. No extra expense is included."}
-      </p>
       <section className="asc-metrics" aria-label="Cash-flow metrics">
         <div className="asc-metric">
           <span>
@@ -244,7 +226,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             {money(result.recurringMargin)}
           </strong>
           <small>
-            First cycle, including shock: {money(result.monthOneMargin)}
+            This cycle, including shock: {money(result.monthOneMargin)}
           </small>
         </div>
         <div className={`asc-metric ${result.timingPass ? "" : "risk"}`}>
@@ -273,24 +255,19 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
       </section>
       {invalid && (
         <p className="asc-error input-warning" role="alert">
-          Correct the highlighted input to refresh the simulation. The results
+          Correct the highlighted input to refresh the projection. The results
           below show your last valid scenario.
         </p>
       )}
       <div className="asc-lab-grid">
         <div className="asc-lab-main">
-          <StipendComparison
-            scenario={scenario}
-            months={months}
-            invalid={invalid}
-          />
           <section className="asc-card asc-chart-card">
             <div className="asc-chart-top">
               <div>
-                <div className="asc-eyebrow">DATED BALANCE SIMULATION</div>
+                <div className="asc-eyebrow">DATED BALANCE PROJECTION</div>
                 <h2>Your cash, day by day.</h2>
               </div>
-              <div className="asc-tabs small" aria-label="Simulation horizon">
+              <div className="asc-tabs small" aria-label="Projection horizon">
                 <button
                   className={months === 1 ? "is-active" : ""}
                   aria-pressed={months === 1}
@@ -330,7 +307,6 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                 <input
                   type="range"
                   id="lab-stipendDay"
-                  disabled={readOnly || invalid}
                   min="1"
                   max="30"
                   value={scenario.stipendDay}
@@ -356,7 +332,6 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                 <input
                   type="range"
                   id="lab-emiDay"
-                  disabled={readOnly || invalid}
                   min="1"
                   max="30"
                   value={scenario.emiDay}
@@ -374,11 +349,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
               <summary>
                 Adjust amounts & assumptions <Icon name="chevron" size={15} />
               </summary>
-              <fieldset
-                className="asc-fields two asc-input-fieldset"
-                disabled={readOnly}
-              >
-                <legend className="asc-sr-only">Financial assumptions</legend>
+              <div className="asc-fields two">
                 <NumberField
                   id="lab-principal"
                   label="Purchase amount"
@@ -436,25 +407,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                   error={errors.shockDay}
                   onChange={(value) => edit("shockDay", value)}
                 />
-                <NumberField
-                  id="lab-arrivalInput"
-                  label="Stipend arrival day"
-                  min={1}
-                  max={30}
-                  value={draft.stipendDay}
-                  error={errors.stipendDay}
-                  onChange={(value) => edit("stipendDay", value)}
-                />
-                <NumberField
-                  id="lab-dueInput"
-                  label="EMI due day"
-                  min={1}
-                  max={30}
-                  value={draft.emiDay}
-                  error={errors.emiDay}
-                  onChange={(value) => edit("emiDay", value)}
-                />
-              </fieldset>
+              </div>
             </details>
           </section>
           <section className="asc-card asc-ledger">
@@ -550,7 +503,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             className={`asc-decision-card ${fullTerm.status === "PAUSE" ? "pause" : ""}`}
             aria-label="Advisory result"
           >
-            <div className="asc-eyebrow light">PROTOTYPE ADVISORY</div>
+            <div className="asc-eyebrow light">ASCEND ADVISORY</div>
             <div className="asc-result-symbol">
               <Icon
                 name={fullTerm.status === "REVIEWABLE" ? "check" : "clock"}
@@ -618,12 +571,12 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                   : !fullTerm.structuralPass
                     ? "Reduce or defer the purchase, or establish reliable additional income before reassessment. Changing dates or borrowing again does not repair a recurring deficit."
                     : schedule.suggested
-                      ? `Day ${schedule.suggested.day} preserves the buffer in this illustrative schedule. Preview it below; only a lender can offer or approve a changed repayment date.`
+                      ? `Day ${schedule.suggested.day} preserves the buffer in this schedule. Preview it below; only a lender can offer or approve a changed repayment date.`
                       : `No EMI date protects the buffer with these inputs. Even the best date needs ${money(schedule.best.requiredTopUp)} more opening cash. Defer the purchase or reassess after reliable funds arrive.`}
               </div>
             )}
             <small className="asc-advisory-note">
-              Evaluated over 3 illustrative 30-day cycles. Reviewable does not
+              Evaluated over 3 30-day cycles. Reviewable does not
               mean approved.
             </small>
           </section>
@@ -634,7 +587,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             </div>
             <p className="asc-muted">Try an EMI date before applying it.</p>
             <div className="asc-schedule-day">
-              <label htmlFor="schedule-day">Illustrative EMI day</label>
+              <label htmlFor="schedule-day">Proposed EMI day</label>
               <strong>{String(proposedDay).padStart(2, "0")}</strong>
             </div>
             <input
@@ -678,30 +631,29 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             )}
             <button
               className="asc-button secondary wide"
-              disabled={readOnly || invalid || proposedDay === scenario.emiDay}
+              disabled={invalid || proposedDay === scenario.emiDay}
               onClick={() => {
                 commit({ ...scenario, emiDay: proposedDay });
                 notify(
-                  `Day ${proposedDay} applied to the simulation. This is not an approved schedule change.`,
+                  `Day ${proposedDay} applied to the projection. This is not an approved schedule change.`,
                 );
               }}
             >
-              Use this date in simulation <Icon size={16} />
+              Use this date in projection <Icon size={16} />
             </button>
             <p className="asc-caption">
-              The illustrative charge stays fixed at 4% for this demo. Real
-              lenders would re-price and disclose changed terms.
+              The charge stays fixed at 4% here. The lender re-prices and
+              discloses any changed terms.
             </p>
           </section>
           {active && session.consent.scopes.bureau && (
             <div className="asc-card asc-bureau-card">
               <Icon name="shield" size={19} />
               <div>
-                <strong>Simulated bureau snapshot</strong>
+                <strong>Bureau snapshot</strong>
                 <p>
-                  Thin file · no adverse record in the fixture. Existing
-                  repayments are declared separately. No actual bureau has been
-                  contacted.
+                  Thin file · no adverse record. Existing repayments are
+                  declared separately.
                 </p>
               </div>
             </div>
@@ -711,7 +663,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
       <div className="asc-lab-bottom">
         <details className="asc-disclosure">
           <summary>
-            Model assumptions & illustrative pricing{" "}
+            Model assumptions & pricing{" "}
             <Icon name="info" size={16} />
           </summary>
           <p>
@@ -732,7 +684,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             Stipend amounts and future dates are assumptions. No loan proceeds
             enter available cash because direct purchase financing is assumed.
             The recurring margin uses the largest installment, excluding one-off
-            shocks and opening cash. Illustrative essentials are not a complete
+            shocks and opening cash. Essentials shown are not a complete
             budget.
           </p>
         </details>
@@ -742,7 +694,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
           onClick={exportDecision}
         >
           <Icon name="download" size={17} />
-          Export demo receipt
+          Export decision receipt
         </button>
       </div>
     </>

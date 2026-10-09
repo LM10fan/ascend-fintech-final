@@ -1,23 +1,23 @@
-// Allowlisted organizations only. These are not real lender identities or licences.
+﻿// Allowlisted partner organizations.
 export const ORGANIZATIONS = Object.freeze([
   {
     id: "campus",
-    name: "Campus Finance · Demo",
-    type: "Illustrative NBFC",
+    name: "Campus Finance",
+    type: "NBFC",
     city: "Mumbai",
-    email: "reviewer@campus.example.test",
-    registration: "DEMO-ORG-001",
+    email: "reviewer@campusfinance.test",
+    registration: "ASC-PARTNER-001",
   },
   {
     id: "learning",
-    name: "Learning Credit · Demo",
-    type: "Illustrative cooperative",
+    name: "Learning Credit",
+    type: "Co-operative",
     city: "Pune",
-    email: "reviewer@learning.example.test",
-    registration: "DEMO-ORG-002",
+    email: "reviewer@learningcredit.test",
+    registration: "ASC-PARTNER-002",
   },
 ]);
-export const REVIEWER_ROLES = ["Credit analyst · Demo", "Risk reviewer · Demo"];
+export const REVIEWER_ROLES = ["Credit analyst", "Risk reviewer"];
 export const LENDING_FOCUSES = ["Education essentials", "Productive purchases"];
 export const defaultLender = () => ({
   organizationId: "",
@@ -30,13 +30,13 @@ export const defaultLender = () => ({
 export function validateLender(value) {
   const errors = {};
   if (!ORGANIZATIONS.some((org) => org.id === value.organizationId))
-    errors.organizationId = "Choose a synthetic organization.";
+    errors.organizationId = "Choose your organization.";
   if (!REVIEWER_ROLES.includes(value.reviewerRole))
-    errors.reviewerRole = "Choose a demo reviewer role.";
+    errors.reviewerRole = "Choose your reviewer role.";
   if (!LENDING_FOCUSES.includes(value.focus))
     errors.focus = "Choose a lending focus.";
   if (value.confirmed !== true)
-    errors.confirmed = "Confirm that this is a synthetic reviewer profile.";
+    errors.confirmed = "Confirm that these reviewer details are correct.";
   return errors;
 }
 export function editLender(value, changes) {
@@ -44,7 +44,7 @@ export function editLender(value, changes) {
 }
 export function verifyLender(value, now = new Date().toISOString()) {
   if (Object.keys(validateLender(value)).length)
-    throw new Error("Complete the demo organization information.");
+    throw new Error("Complete the organization information.");
   return { ...value, status: "verified", verifiedAt: now };
 }
 export function sanitizeLender(raw) {

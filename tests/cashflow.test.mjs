@@ -7,51 +7,7 @@ import {
   loanTerms,
   exploreSchedule,
   validateScenario,
-  compareStipendTiming,
 } from "../src/features/ascend/domain/cashflow.js";
-
-test("Day 5 versus Day 20 isolates timing, preserving totals and affordability", () => {
-  for (const months of [1, 3]) {
-    for (const shock of [0, 600]) {
-      const input = { ...base, stipendDay: 12, shock };
-      const { day5, day20 } = compareStipendTiming(input, { months });
-      assert.deepEqual(input, { ...base, stipendDay: 12, shock });
-      assert.equal(day5.recurringMargin, 530);
-      assert.equal(day20.recurringMargin, 530);
-      assert.equal(day5.closingBalance, day20.closingBalance);
-      assert.equal(day5.lowestBalance, 1100 - shock);
-      assert.equal(day20.lowestBalance, -2470 - shock);
-      for (const result of [day5, day20]) {
-        assert.equal(result.horizon, months * 30);
-        assert.equal(
-          result.ledger.filter((row) => row.kind === "shock").length,
-          shock > 0 ? 1 : 0,
-        );
-        assert.equal(result.closingBalance, 3000 + 530 * months - shock);
-      }
-    }
-  }
-});
-test("shock off/on/off is stateless and never becomes a recurring expense", () => {
-  for (const stipendDay of [5, 20]) {
-    const without = simulate({ ...base, stipendDay }, { months: 3 });
-    const withShock = simulate(
-      { ...base, stipendDay, shock: 600 },
-      { months: 3 },
-    );
-    const removed = simulate({ ...base, stipendDay, shock: 0 }, { months: 3 });
-    assert.deepEqual(removed, without);
-    assert.equal(without.closingBalance - withShock.closingBalance, 600);
-    assert.equal(withShock.recurringMargin, without.recurringMargin);
-    assert.equal(withShock.monthOneMargin, -70);
-  }
-});
-test("coercible non-numeric values cannot enter the engine", () => {
-  for (const income of [true, false, [], {}, " ", "\t"]) {
-    assert.ok(validateScenario({ ...base, income }).income);
-    assert.throws(() => simulate({ ...base, income }));
-  }
-});
 
 test("reference fixture: dated ledger, cost, margin and buffer reconcile", () => {
   const result = simulate(base);

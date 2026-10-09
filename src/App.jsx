@@ -1,18 +1,32 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ApplyPage, DecisionLabPage } from "./features/ascend/index.jsx";
+import {
+  ApplyPage,
+  AssessmentPage,
+  CreditPage,
+  DecisionLabPage,
+} from "./features/ascend/index.jsx";
 import {
   browserStore,
   defaultSession,
 } from "./features/ascend/data/demoStore.js";
-import { Badge, Icon } from "./features/ascend/components/ui.jsx";
+import { createDemoServices } from "./features/ascend/integrations/demoServices.js";
+import { Icon } from "./features/ascend/components/ui.jsx";
 import "./features/ascend/ascend.css";
+import "./features/ascend/credit.css";
 const store = browserStore();
-export default function App() {
+const demoServices = createDemoServices();
+const ROUTES = {
+  "/apply": { number: "01", label: "Apply & Consent", title: "Apply & Consent", Page: ApplyPage },
+  "/decision-lab": { number: "02", label: "Decision Lab", title: "Cash-flow Decision Lab", Page: DecisionLabPage },
+  "/assessment": { number: "03", label: "Assessment", title: "Assessment & Payments", Page: AssessmentPage },
+  "/credit": { number: "04", label: "Credit Ladder", title: "CIBIL & Credit Ladder", Page: CreditPage },
+};
+const routeFor = (pathname) => (ROUTES[pathname] ? pathname : "/apply");
+export default function App({ services = demoServices }) {
   const [initial] = useState(() => store.load());
   const [session, setSession] = useState(initial.session);
-  const [path, setPath] = useState(() =>
-    window.location.pathname === "/decision-lab" ? "/decision-lab" : "/apply",
-  );
+  const sessionRef = useRef(session);
+  const [path,    setPath] = useState(() => routeFor(window.location.pathname));
   const [toast, setToast] = useState("");
   const [warning, setWarning] = useState(initial.warning);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -25,19 +39,14 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [toast]);
   useEffect(() => {
-    if (!["/apply", "/decision-lab"].includes(window.location.pathname))
+    if (!ROUTES[window.location.pathname])
       window.history.replaceState({}, "", "/apply");
-    const handleBack = () =>
-      setPath(
-        window.location.pathname === "/decision-lab"
-          ? "/decision-lab"
-          : "/apply",
-      );
+    const handleBack = () => setPath(routeFor(window.location.pathname));
     window.addEventListener("popstate", handleBack);
     return () => window.removeEventListener("popstate", handleBack);
   }, []);
   useEffect(() => {
-    document.title = `${path === "/apply" ? "Apply & Consent" : "Cash-flow Decision Lab"} · Ascend`;
+    document.title = `${ROUTES[path].title} · Ascend`;
   }, [path]);
   const navigate = (next) => {
     if (next === path) return;
@@ -48,26 +57,30 @@ export default function App() {
     setTimeout(() => mainRef.current?.focus(), 0);
   };
   function update(next, persist = false) {
-    setSession(next);
+    const value = typeof next === "function" ? next(sessionRef.current) : next;
+    sessionRef.current = value;
+    setSession(value);
     if (persist) {
-      const result = store.save(next);
+      const result = store.save(value);
       if (!result.ok) setWarning(result.warning);
     }
   }
   function clear() {
     const result = store.clear();
-    setSession(defaultSession());
+    sessionRef.current = defaultSession();
+    setSession(sessionRef.current);
     setResetKey((key) => key + 1);
     setConfirmClear(false);
     navigate("/apply");
     if (result.ok) {
       setWarning("");
-      notify("All Ascend demo data in this browser has been deleted.");
+      notify("All Ascend data in this browser has been deleted.");
     } else {
       setWarning(result.warning);
       notify("Session reset. Stored data could not be deleted.");
     }
   }
+  const ActivePage = ROUTES[path].Page;
   return (
     <div className="ascend-app">
       <a href="#asc-main" className="asc-skip-link">
@@ -88,36 +101,23 @@ export default function App() {
           </span>
         </button>
         <nav aria-label="Main navigation">
-          <a
-            href="/apply"
-            className={path === "/apply" ? "active" : ""}
-            aria-current={path === "/apply" ? "page" : undefined}
-            onClick={(event) => {
-              if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-                event.preventDefault();
-                navigate("/apply");
-              }
-            }}
-          >
-            <span>01</span> Apply & Consent
-          </a>
-          <a
-            href="/decision-lab"
-            className={path === "/decision-lab" ? "active" : ""}
-            aria-current={path === "/decision-lab" ? "page" : undefined}
-            onClick={(event) => {
-              if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-                event.preventDefault();
-                navigate("/decision-lab");
-              }
-            }}
-          >
-            <span>02</span> Decision Lab
-          </a>
+          {Object.entries(ROUTES).map(([href, route]) => (
+            <a
+              key={href}
+              href={href}
+              className={path === href ? "active" : ""}
+              aria-current={path === href ? "page" : undefined}
+              onClick={(event) => {
+                if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+                  event.preventDefault();
+                  navigate(href);
+                }
+              }}
+            >
+              <span>{route.number}</span> {route.label}
+            </a>
+          ))}
         </nav>
-        <Badge dot tone="green">
-          PROTOTYPE
-        </Badge>
       </header>
       <main
         id="asc-main"
@@ -131,29 +131,20 @@ export default function App() {
             {warning}
           </div>
         )}
-        {path === "/apply" ? (
-          <ApplyPage
-            session={session}
-            update={update}
-            navigate={navigate}
-            notify={notify}
-          />
-        ) : (
-          <DecisionLabPage
-            session={session}
-            update={update}
-            navigate={navigate}
-            notify={notify}
-          />
-        )}
+        <ActivePage
+          session={session}
+          update={update}
+          navigate={navigate}
+          notify={notify}
+          services={services}
+        />
       </main>
       <footer className="asc-footer">
         <div>
           <strong>Progress, with perspective.</strong>
           <p>
-            Ascend is a technology prototype, not a bank or NBFC. All identities
-            and financial interactions are simulated. No money moves and no
-            credit is promised.
+            Ascend is a technology platform, not a bank or NBFC. Credit is
+            offered and approved only by regulated partner lenders.
           </p>
         </div>
         <div className="asc-delete-area">
@@ -161,9 +152,9 @@ export default function App() {
             <div
               className="asc-delete-confirm"
               role="group"
-              aria-label="Confirm delete demo data"
+              aria-label="Confirm delete local data"
             >
-              <span>Delete this browser’s demo records?</span>
+              <span>Delete this browser’s Ascend records?</span>
               <button className="asc-text-button danger" onClick={clear}>
                 Yes, delete
               </button>
@@ -180,7 +171,7 @@ export default function App() {
               onClick={() => setConfirmClear(true)}
             >
               <Icon name="bin" size={14} />
-              Delete local demo data
+              Delete local data
             </button>
           )}
           <small>CASEBLITZ 2026 · PROJECT ASCEND</small>

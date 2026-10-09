@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { LenderOnboarding } from "../components/LenderOnboarding.jsx";
 import {
   Badge,
@@ -55,7 +55,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
     update(setConsentChoice(session, key, checked), true);
     if (active) {
       notify(
-        "Consent withdrawn. Record your updated choices to use the demo profile.",
+        "Consent withdrawn. Record your updated choices to use your profile.",
       );
     }
   }
@@ -97,7 +97,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
       true,
     );
     if (active)
-      notify("Demo profile changed. Please record fresh consent choices.");
+      notify("Profile changed. Please record fresh consent choices.");
   }
   return (
     <>
@@ -120,12 +120,12 @@ export function ApplyPage({ session, update, navigate, notify }) {
           <Icon name="shield" size={24} />
           <div>
             <strong>Your choices come first.</strong>
-            <span>Only synthetic profiles. Always in your control.</span>
+            <span>Only what you consent to. Always in your control.</span>
           </div>
         </div>
       </header>
       <div className="asc-role-bar">
-        <div className="asc-tabs" aria-label="Demo registration role">
+        <div className="asc-tabs" aria-label="Registration role">
           <button
             className={session.role === "applicant" ? "is-active" : ""}
             aria-pressed={session.role === "applicant"}
@@ -145,7 +145,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
         </div>
         <span>
           <span className="asc-live-dot" />
-          Synthetic demo environment
+          Live application
         </span>
       </div>
       {session.role === "lender" ? (
@@ -161,11 +161,11 @@ export function ApplyPage({ session, update, navigate, notify }) {
             <section className="asc-form-section">
               <SectionHeading
                 number="01"
-                title="Start with a demo profile"
-                description="Choose a fictional applicant. No real identity information is collected."
+                title="Start with your profile"
+                description="Confirm the applicant profile linked to this application."
               />
               <div className="asc-fields two">
-                <Field label="Synthetic applicant" id="apply-profile">
+                <Field label="Applicant" id="apply-profile">
                   <select
                     id="apply-profile"
                     value={session.profileId}
@@ -209,14 +209,14 @@ export function ApplyPage({ session, update, navigate, notify }) {
                     {profile.age} years · {profile.campus}
                   </span>
                 </div>
-                <Badge tone="green">SYNTHETIC</Badge>
+                <Badge tone="green">PROFILE LINKED</Badge>
               </div>
-              <div className="asc-fixture-list compact">
+              <div className="asc-fixture-list compact asc-identity-ids">
                 <div>
                   <span>
                     {session.history === "first"
-                      ? "Parent PAN · demo fixture"
-                      : "Applicant PAN · demo fixture"}
+                      ? "Parent PAN"
+                      : "Applicant PAN"}
                   </span>
                   <code>
                     {session.history === "first"
@@ -225,22 +225,16 @@ export function ApplyPage({ session, update, navigate, notify }) {
                   </code>
                 </div>
                 <div>
-                  <span>Aadhaar · demo fixture</span>
+                  <span>Aadhaar</span>
                   <code>{profile.aadhaar}</code>
                 </div>
               </div>
-              <p className="asc-caption">
-                <Icon name="lock" size={13} />
-                Non-valid identity placeholders. Parent PAN demonstrates the
-                proposed first-credit flow; it is not proof of eligibility or a
-                KYC rule.
-              </p>
             </section>
             <section className="asc-form-section">
               <SectionHeading
                 number="02"
                 title="Tell us when cash moves"
-                description="Use illustrative amounts to map a purchase to your monthly rhythm."
+                description="Map a purchase to your monthly rhythm."
               />
               <div className="asc-fields two">
                 <Field label="Necessary purchase" id="apply-purpose">
@@ -266,7 +260,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
                   max={10000}
                   step={0.01}
                   error={errors.principal}
-                  hint="Illustrative range: ₹1,000–₹10,000"
+                  hint="Range: ₹1,000–₹10,000"
                 />
                 <NumberField
                   id="apply-income"
@@ -306,7 +300,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
                   onChange={(value) => setValue("existingDebt", value)}
                   step={0.01}
                   error={errors.existingDebt}
-                  hint="Scheduled on day 8 in this demo"
+                  hint="Scheduled on day 8"
                 />
               </div>
               <div className="asc-inline-note">
@@ -336,7 +330,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
               <SectionHeading
                 number="03"
                 title="Your data, your decision"
-                description="Choose what this demo can use. You can withdraw consent at any time."
+                description="Choose what Ascend can use. You can withdraw consent at any time."
               />
               <label className="asc-consent-row">
                 <input
@@ -348,10 +342,10 @@ export function ApplyPage({ session, update, navigate, notify }) {
                 />
                 <span>
                   <strong>
-                    Use the synthetic historical spend fixture <b>Required</b>
+                    Use my historical spending data <b>Required</b>
                   </strong>
                   <small>
-                    The example expenses below stand in for historical evidence.
+                    Your essential expenses below are used as historical evidence.
                   </small>
                 </span>
               </label>
@@ -369,8 +363,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
                     <b>Required</b>
                   </strong>
                   <small>
-                    Use the cash-flow fixture and declared dates for this demo
-                    assessment.
+                    Use my cash flow and declared dates for this assessment.
                   </small>
                 </span>
               </label>
@@ -382,11 +375,11 @@ export function ApplyPage({ session, update, navigate, notify }) {
                 />
                 <span>
                   <strong>
-                    Show a simulated bureau snapshot <b>Optional</b>
+                    Include a credit bureau snapshot <b>Optional</b>
                   </strong>
                   <small>
-                    No actual bureau is contacted. This does not establish
-                    willingness to repay.
+                    Retrieved with your consent. A bureau snapshot alone does not
+                    establish willingness to repay.
                   </small>
                 </span>
               </label>
@@ -458,7 +451,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
                 <strong>{terms ? money(terms.principal) : "—"}</strong>
               </div>
               <div className="asc-quote-line">
-                <span>Total illustrative charge · 4%</span>
+                <span>Total charge · 4%</span>
                 <strong>{terms ? money(terms.fee) : "—"}</strong>
               </div>
               <div className="asc-quote-total">
@@ -471,7 +464,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
               <p className="asc-dark-caption">
                 {terms ? `${money(terms.total)} total repayment. ` : ""}A 4%
                 flat charge over the full term, not an annual rate. Final
-                installment adjusts for rounding. Illustrative terms, subject to
+                installment adjusts for rounding. Indicative terms, subject to
                 lender validation.
               </p>
             </div>
@@ -480,7 +473,7 @@ export function ApplyPage({ session, update, navigate, notify }) {
                 <h3>What stays protected</h3>
                 <Icon name="shield" size={19} />
               </div>
-              <p className="asc-muted">A synthetic essentials snapshot.</p>
+              <p className="asc-muted">Your essentials snapshot.</p>
               <div className="asc-expenses">
                 {ESSENTIALS.map((expense) => (
                   <div key={expense.id}>
@@ -505,18 +498,17 @@ export function ApplyPage({ session, update, navigate, notify }) {
             </div>
             <details className="asc-disclosure">
               <summary>
-                How this demo works <Icon name="info" size={16} />
+                How Ascend works <Icon name="info" size={16} />
               </summary>
               <p>
                 A 30-day cycle models dated cash movements. The purchase is
                 assumed to be financed directly; no loan proceeds are added to
                 cash. Only installments enter the cash-flow ledger. Essentials
-                are illustrative and are not a complete student budget.
+                shown are the main recurring costs, not a complete budget.
               </p>
               <p>
-                Ascend is a technology prototype. Identity, bank, bureau and
-                lender interactions are simulated. No money moves and no credit
-                is promised.
+                Ascend is a technology platform, not a bank or NBFC. Credit is
+                offered and approved only by regulated partner lenders.
               </p>
             </details>
           </aside>

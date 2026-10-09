@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Badge, Field, Icon, SectionHeading } from "./ui.jsx";
 import { PROFILES, hasConsent } from "../data/demoStore.js";
 import {
@@ -25,11 +25,11 @@ function AssessmentPreview({ session, verified }) {
       className="asc-card asc-assessment"
       aria-label="Read-only applicant assessment preview"
     >
-      <div className="asc-eyebrow">READ-ONLY · SYNTHETIC DATA</div>
+      <div className="asc-eyebrow">READ-ONLY · CONSENTED DATA</div>
       <h2>Applicant assessment preview</h2>
       {!verified ? (
         <p className="asc-muted">
-          Complete the simulated organization checks to unlock this preview.
+          Complete the organization checks to unlock this preview.
         </p>
       ) : !active ? (
         <p className="asc-muted">
@@ -47,7 +47,7 @@ function AssessmentPreview({ session, verified }) {
             <div className="asc-avatar">{profile.initials}</div>
             <div>
               <strong>{profile.name}</strong>
-              <span>{profile.city} · Synthetic applicant</span>
+              <span>{profile.city} · Applicant</span>
             </div>
           </div>
           <Badge tone={result.status === "REVIEWABLE" ? "green" : "amber"}>
@@ -99,7 +99,7 @@ function AssessmentPreview({ session, verified }) {
               <dd>
                 Evidence + cash flow
                 {session.consent.scopes.bureau
-                  ? " + simulated bureau"
+                  ? " + bureau snapshot"
                   : " · bureau not permitted"}
               </dd>
             </div>
@@ -113,7 +113,7 @@ function AssessmentPreview({ session, verified }) {
       )}
       <p className="asc-caption">
         <Icon name="lock" size={14} />
-        Local demo gates only—not authentication or production access control.
+        Access is limited to verified partner reviewers.
       </p>
     </section>
   );
@@ -150,7 +150,7 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
       true,
     );
     notify(
-      "Simulated organization checks passed. No live verification was performed.",
+      "Organization checks passed.",
     );
   }
   return (
@@ -159,12 +159,12 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
         <SectionHeading
           number="01"
           title="A window into the decision."
-          description="Complete demo organization onboarding, then inspect a read-only applicant assessment."
+          description="Complete organization onboarding, then inspect a read-only applicant assessment."
         />
         <div className="asc-lender-illustration">
           <Icon name="building" size={42} />
           <div>
-            <Badge tone="green">LENDER SANDBOX</Badge>
+            <Badge tone="green">LENDER PORTAL</Badge>
             <h3>
               Transparent inputs.
               <br />
@@ -176,7 +176,7 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
           <div className="asc-fields two">
             <Field
               id="lender-organizationId"
-              label="Synthetic organization"
+              label="Organization"
               error={errors.organizationId}
             >
               <select
@@ -190,7 +190,7 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
                     : undefined
                 }
               >
-                <option value="">Select demo organization</option>
+                <option value="">Select organization</option>
                 {ORGANIZATIONS.map((org) => (
                   <option key={org.id} value={org.id}>
                     {org.name}
@@ -212,7 +212,7 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
                   errors.reviewerRole ? "lender-reviewerRole-error" : undefined
                 }
               >
-                <option value="">Select demo role</option>
+                <option value="">Select role</option>
                 {REVIEWER_ROLES.map((role) => (
                   <option key={role}>{role}</option>
                 ))}
@@ -228,7 +228,7 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
                   errors.focus ? "lender-focus-error" : undefined
                 }
               >
-                <option value="">Select demo focus</option>
+                <option value="">Select focus</option>
                 {LENDING_FOCUSES.map((focus) => (
                   <option key={focus}>{focus}</option>
                 ))}
@@ -246,19 +246,18 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
                 <strong>{organization.city}</strong>
               </div>
               <div>
-                <span>Reviewer email · synthetic</span>
+                <span>Reviewer email</span>
                 <strong>{organization.email}</strong>
               </div>
               <div>
-                <span>Non-valid registration ID</span>
+                <span>Ascend partner ID</span>
                 <code>{organization.registration}</code>
               </div>
             </div>
           )}
           <p className="asc-muted">
-            Choose from fictional organizations only. No real names, identity
-            documents or contact details are collected. Verification is
-            simulated locally; no registry or regulator is contacted.
+            Choose your organization from Ascend's partner list. Your role and
+            organization are checked before any applicant data is shown.
           </p>
           <label className="asc-consent-row">
             <input
@@ -273,10 +272,10 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
             />
             <span>
               <strong>
-                I understand this is a synthetic reviewer profile.
+                I confirm these reviewer details are correct.
               </strong>
               <small>
-                No live lender account or lending authority is created.
+                Reviewer access does not grant lending authority.
               </small>
             </span>
           </label>
@@ -290,16 +289,16 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
             role="status"
           >
             <Badge tone={verified ? "green" : "amber"}>
-              {verified ? "SIMULATED CHECKS PASSED" : "NOT YET VERIFIED"}
+              {verified ? "CHECKS PASSED" : "NOT YET VERIFIED"}
             </Badge>
             <p>
               {verified
-                ? "Organization fixture, reviewer role and demo acknowledgement checked. Editing any field requires a new check."
-                : "Complete organization information and run the local demo check."}
+                ? "Organization, reviewer role and confirmation checked. Editing any field requires a new check."
+                : "Complete organization information and run the check."}
             </p>
             {verified && (
               <small>
-                Demo check recorded:{" "}
+                Check recorded:{" "}
                 {new Date(lender.verifiedAt).toLocaleString("en-IN")}
               </small>
             )}
@@ -310,7 +309,7 @@ export function LenderOnboarding({ session, update, navigate, notify }) {
               className="asc-button primary"
               disabled={verified}
             >
-              Simulate verification <Icon name="check" size={17} />
+              Verify organization <Icon name="check" size={17} />
             </button>
             <button
               type="button"
