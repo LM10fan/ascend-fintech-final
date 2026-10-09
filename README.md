@@ -1,1 +1,2 @@
-# ascend-fintech-final
+# caseblitz-project-ascend
+CaseBlitz 2026 — Fintech Working Prototype
