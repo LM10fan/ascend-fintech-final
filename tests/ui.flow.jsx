@@ -171,6 +171,19 @@ fireEvent.click(screen.getByRole("button", { name: /Verify organization/ }));
 fireEvent.click(screen.getByRole("button", { name: /Open reviewer view/ }));
 assert.equal(window.location.pathname, "/decision-lab");
 assert.ok(screen.getByText(/Reviewer view/));
+// New ASCEND 2.0 recommendation controls must be discoverable and actionable.
+fireEvent.click(screen.getByRole("button", { name: /Delay to 20th/ }));
+const alternativesRegion = screen.getByRole("region", { name: "Explore safer alternatives" });
+assert.ok(within(alternativesRegion).getByText(/Explore a different repayment plan/));
+const tryButtons = within(alternativesRegion).queryAllByRole("button", { name: "Try this scenario" });
+assert.ok(tryButtons.length > 0, "late stipend should produce an actionable alternative");
+const beforeRecommendation = screen.getByTestId("lowest-balance").textContent;
+fireEvent.click(tryButtons[0]);
+assert.notEqual(
+  screen.getByTestId("lowest-balance").textContent,
+  beforeRecommendation,
+  "trying an alternative should recalculate the projection",
+);
 cleanup();
 console.log(
   "PASS: masked identity, validation, consent, draft persistence, live scenarios, chart/ledger linkage, schedule exploration, full term, reset, persistence, withdrawal, manual route, namespaced deletion, lender verification, read-only preview, reviewer view.",
