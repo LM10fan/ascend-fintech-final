@@ -60,3 +60,22 @@ test("reviewable scenarios never suggest a PAUSE outcome across supported dates"
     }
   }
 });
+
+test("alternatives never turn a passing affordability gate into a failure", () => {
+  for (const stipendDay of [1, 5, 10, 15, 20, 25, 30]) {
+    for (const emiDay of [1, 5, 10, 15, 20, 25, 30]) {
+      for (const principal of [1000, 3000, 6000, 9000]) {
+        const scenario = { ...DEFAULT_SCENARIO, stipendDay, emiDay, principal };
+        const { baseline, alternatives } = suggestAlternatives(scenario);
+        for (const { result } of alternatives) {
+          if (baseline.structuralPass) {
+            assert.equal(result.structuralPass, true, "monthly margin gate regressed");
+          }
+          if (baseline.timingPass) {
+            assert.equal(result.timingPass, true, "dated buffer gate regressed");
+          }
+        }
+      }
+    }
+  }
+});
