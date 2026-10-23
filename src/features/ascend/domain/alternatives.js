@@ -27,10 +27,14 @@ export function suggestAlternatives(scenario) {
       result,
     });
   }
-  const improvements = candidates.filter(({ result }) =>
-    (result.structuralPass && result.timingPass && baseline.status !== "REVIEWABLE") ||
-    (result.lowestBalance > baseline.lowestBalance && result.recurringMargin >= baseline.recurringMargin)
-  );
+  const improvements = candidates.filter(({ result }) => {
+    // Never present a worse advisory status as an improvement.
+    if (baseline.status === "REVIEWABLE" && result.status !== "REVIEWABLE") return false;
+    const newlyReviewable = baseline.status !== "REVIEWABLE" && result.status === "REVIEWABLE";
+    const strongerBuffer = result.lowestBalance > baseline.lowestBalance &&
+      result.recurringMargin >= baseline.recurringMargin;
+    return newlyReviewable || strongerBuffer;
+  });
   improvements.sort((a, b) =>
     Number(b.result.status === "REVIEWABLE") - Number(a.result.status === "REVIEWABLE") ||
     (a.kind === "date" ? 0 : 1) - (b.kind === "date" ? 0 : 1) ||
