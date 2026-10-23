@@ -1,0 +1,21 @@
+{
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/apply",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/decision-lab",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/assessment",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/credit",
+      "destination": "/index.html"
+    }
+  ]
+}
