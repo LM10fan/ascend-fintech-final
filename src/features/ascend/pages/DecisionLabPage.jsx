@@ -529,7 +529,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                       ? " The advisory status improves."
                       : ""}
                   </p>
-                  <button type="button" aria-label={`Try this scenario: ${option.label}`} onClick={() => commit({ ...scenario, ...option.changes })}>
+                  <button type="button" disabled={invalid} aria-label={`Try this scenario: ${option.label}`} onClick={() => commit({ ...scenario, ...option.changes })}>
                     Try this scenario
                   </button>
                 </article>
