@@ -102,7 +102,7 @@ assert.equal(screen.getByTestId("monthly-margin").textContent, "₹530");
 fireEvent.change(screen.getByLabelText("Monthly stipend"), {
   target: { value: "" },
 });
-assert.ok(screen.getByText(/Correct the highlighted input/));
+assert.ok(screen.getAllByText(/Correct the highlighted input/).length > 0);
 assert.ok(screen.getByText(/These comparisons use the last valid scenario/));
 const invalidAlternativeButtons = within(screen.getByRole("region", { name: "Explore safer alternatives" }))
   .queryAllByRole("button", { name: /^Try this scenario:/ });
