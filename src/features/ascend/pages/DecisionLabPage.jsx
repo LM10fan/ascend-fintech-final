@@ -17,6 +17,8 @@ import {
   validateScenario,
 } from "../domain/cashflow.js";
 import { PROFILES, hasConsent } from "../data/demoStore.js";
+import { explainDecision } from "../domain/explain.js";
+import { suggestAlternatives } from "../domain/alternatives.js";
 import { downloadJson } from "../components/download.js";
 function dayLabel(day) {
   return day === 0 ? "before day 1" : `on day ${day}`;
@@ -34,6 +36,8 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
     [scenario, months],
   );
   const fullTerm = useMemo(() => simulate(scenario, { months: 3 }), [scenario]);
+  const explanation = useMemo(() => explainDecision(fullTerm), [fullTerm]);
+  const suggestions = useMemo(() => suggestAlternatives(scenario), [scenario]);
   const explored = useMemo(
     () => simulate({ ...scenario, emiDay: proposedDay }, { months: 3 }),
     [scenario, proposedDay],
@@ -498,6 +502,46 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             </details>
           </section>
         </div>
+        <section className="asc-alternatives" aria-label="Explore safer alternatives">
+          <div className="asc-eyebrow">WHAT CAN I CHANGE?</div>
+          <h2>Explore a different repayment plan</h2>
+          <p>Compare illustrative changes against the current three-cycle scenario. No change is applied automatically, and no result guarantees approval.</p>
+          {invalid && (
+            <p role="status">Correct the highlighted input before trying an alternative. These comparisons use the last valid scenario.</p>
+          )}
+          {suggestions.alternatives.length ? (
+            <div className="asc-alternative-options">
+              {suggestions.alternatives.map((option) => (
+                <article className="asc-alternative-option" key={option.kind}>
+                  <strong>{option.label}</strong>
+                  <p>Advisory: {option.result.status} · Lowest projected balance: {money(option.result.lowestBalance)} (currently {money(fullTerm.lowestBalance)})</p>
+                  <p className="asc-alternative-why">
+                    {option.kind === "date"
+                      ? "Changing the due date shifts repayment timing without reducing the installment amount."
+                      : `A smaller request lowers the modeled installment to ${money(option.result.terms.maxEmi)} (from ${money(fullTerm.terms.maxEmi)}).`}
+                  </p>
+                  <p className="asc-alternative-delta">
+                    {option.result.lowestBalance > fullTerm.lowestBalance
+                      ? `Projected minimum balance improves by ${money(Math.round((option.result.lowestBalance - fullTerm.lowestBalance) * 100) / 100)}.`
+                      : "Projected minimum balance is unchanged."}
+                  </p>
+                  <p>
+                    Recurring monthly margin: {money(option.result.recurringMargin)}
+                    {" "}(currently {money(fullTerm.recurringMargin)}).
+                    {option.result.status !== fullTerm.status
+                      ? " The advisory status improves."
+                      : ""}
+                  </p>
+                  <button type="button" disabled={invalid} aria-label={`Try this scenario: ${option.label}`} onClick={() => commit({ ...scenario, ...option.changes })}>
+                    Try this scenario
+                  </button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>No improved single-variable alternative was found within the model's supported ranges. This is not a credit decision.</p>
+          )}
+        </section>
         <aside className="asc-decision-aside">
           <section
             className={`asc-decision-card ${fullTerm.status === "PAUSE" ? "pause" : ""}`}
@@ -521,6 +565,15 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                   ? `The projected balance falls below ${money(POLICY.buffer)} ${dayLabel(fullTerm.firstBreach.day)}. The lowest point is ${money(fullTerm.lowestBalance)} ${dayLabel(fullTerm.lowestDay)}.`
                   : `All dated events preserve the ${money(POLICY.buffer)} buffer. The lowest balance is ${money(fullTerm.lowestBalance)} ${dayLabel(fullTerm.lowestDay)}.`}
             </p>
+            <div className="asc-explanation-list" aria-label="Why this result">
+              {explanation.reasons.map((reason) => (
+                <div className="asc-explanation-item" key={reason.code}>
+                  <strong>{reason.heading}</strong>
+                  <p>{reason.detail}</p>
+                  <small>{reason.code}</small>
+                </div>
+              ))}
+            </div>
             <div className="asc-reason-code">
               Reason <code data-testid="reason-code">{fullTerm.reason}</code>
             </div>

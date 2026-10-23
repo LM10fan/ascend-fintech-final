@@ -102,7 +102,12 @@ assert.equal(screen.getByTestId("monthly-margin").textContent, "₹530");
 fireEvent.change(screen.getByLabelText("Monthly stipend"), {
   target: { value: "" },
 });
-assert.ok(screen.getByText(/Correct the highlighted input/));
+assert.ok(screen.getAllByText(/Correct the highlighted input/).length > 0);
+assert.ok(screen.getByText(/These comparisons use the last valid scenario/));
+const invalidAlternativeButtons = within(screen.getByRole("region", { name: "Explore safer alternatives" }))
+  .queryAllByRole("button", { name: /^Try this scenario:/ });
+// Some scenarios have no qualifying alternatives; any visible actions must stay disabled.
+assert.ok(invalidAlternativeButtons.every((button) => button.disabled), "invalid drafts must not be silently discarded by recommendation actions");
 assert.equal(
   screen.getByRole("button", { name: /Export decision receipt/ }).disabled,
   true,
@@ -171,6 +176,23 @@ fireEvent.click(screen.getByRole("button", { name: /Verify organization/ }));
 fireEvent.click(screen.getByRole("button", { name: /Open reviewer view/ }));
 assert.equal(window.location.pathname, "/decision-lab");
 assert.ok(screen.getByText(/Reviewer view/));
+// New ASCEND 2.0 recommendation controls must be discoverable and actionable.
+fireEvent.click(screen.getByRole("button", { name: /Delay to 20th/ }));
+const alternativesRegion = screen.getByRole("region", { name: "Explore safer alternatives" });
+assert.ok(within(alternativesRegion).getByText(/Explore a different repayment plan/));
+const tryButtons = within(alternativesRegion).queryAllByRole("button", { name: /^Try this scenario:/ });
+assert.ok(tryButtons.length > 0, "late stipend should produce an actionable alternative");
+assert.ok(within(alternativesRegion).getAllByText(/Projected minimum balance improves by|Projected minimum balance is unchanged/).length > 0);
+assert.ok(within(alternativesRegion).getAllByText(/Recurring monthly margin:/).length > 0, "every displayed alternative explains the affordability trade-off");
+assert.ok(within(alternativesRegion).getAllByText(/Changing the due date|A smaller request lowers/).length > 0);
+assert.ok(tryButtons.every((button) => button.getAttribute("aria-label")?.includes("Move EMI") || button.getAttribute("aria-label")?.includes("Reduce request")));
+const beforeRecommendation = screen.getByTestId("lowest-balance").textContent;
+fireEvent.click(tryButtons[0]);
+assert.notEqual(
+  screen.getByTestId("lowest-balance").textContent,
+  beforeRecommendation,
+  "trying an alternative should recalculate the projection",
+);
 cleanup();
 console.log(
   "PASS: masked identity, validation, consent, draft persistence, live scenarios, chart/ledger linkage, schedule exploration, full term, reset, persistence, withdrawal, manual route, namespaced deletion, lender verification, read-only preview, reviewer view.",
