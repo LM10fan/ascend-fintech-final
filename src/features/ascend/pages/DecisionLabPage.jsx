@@ -18,6 +18,7 @@ import {
 } from "../domain/cashflow.js";
 import { PROFILES, hasConsent } from "../data/demoStore.js";
 import { explainDecision } from "../domain/explain.js";
+import { suggestAlternatives } from "../domain/alternatives.js";
 import { downloadJson } from "../components/download.js";
 function dayLabel(day) {
   return day === 0 ? "before day 1" : `on day ${day}`;
@@ -36,6 +37,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
   );
   const fullTerm = useMemo(() => simulate(scenario, { months: 3 }), [scenario]);
   const explanation = useMemo(() => explainDecision(fullTerm), [fullTerm]);
+  const suggestions = useMemo(() => suggestAlternatives(scenario), [scenario]);
   const explored = useMemo(
     () => simulate({ ...scenario, emiDay: proposedDay }, { months: 3 }),
     [scenario, proposedDay],
@@ -500,6 +502,26 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
             </details>
           </section>
         </div>
+        <section className="asc-alternatives" aria-label="Explore safer alternatives">
+          <div className="asc-eyebrow">WHAT CAN I CHANGE?</div>
+          <h2>Explore a different repayment plan</h2>
+          <p>Compare illustrative changes against the current three-cycle scenario. No change is applied automatically, and no result guarantees approval.</p>
+          {suggestions.alternatives.length ? (
+            <div className="asc-alternative-options">
+              {suggestions.alternatives.map((option) => (
+                <article className="asc-alternative-option" key={option.kind}>
+                  <strong>{option.label}</strong>
+                  <p>Advisory: {option.result.status} · Lowest projected balance: {money(option.result.lowestBalance)} (currently {money(fullTerm.lowestBalance)})</p>
+                  <button type="button" onClick={() => commit({ ...scenario, ...option.changes })}>
+                    Try this scenario
+                  </button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>No improved single-variable alternative was found within the model's supported ranges. This is not a credit decision.</p>
+          )}
+        </section>
         <aside className="asc-decision-aside">
           <section
             className={`asc-decision-card ${fullTerm.status === "PAUSE" ? "pause" : ""}`}
