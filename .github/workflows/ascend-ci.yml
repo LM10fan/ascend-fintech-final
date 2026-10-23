@@ -35,3 +35,33 @@ jobs:
         run: npm run test:ui
       - name: Production build
         run: npm run build
+
+  browser:
+    name: Chromium desktop and mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install application dependencies
+        run: npm ci
+      - name: Install browser runner
+        run: npm install --no-save --package-lock=false playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build preview
+        run: npm run build
+      - name: Start local preview
+        run: |
+          npm run preview > /tmp/ascend-preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/apply >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/ascend-preview.log
+          exit 1
+      - name: Browser route and layout tests
+        run: node tests/browser-smoke.mjs
