@@ -21,6 +21,9 @@ test("every suggested alternative improves the projected result", () => {
     for (const item of alternatives) {
       const computed = simulate({ ...scenario, ...item.changes }, { months: 3 });
       assert.deepEqual(item.result, computed);
+      if (baseline.status === "REVIEWABLE") {
+        assert.equal(computed.status, "REVIEWABLE", "never downgrade a reviewable scenario");
+      }
       assert.ok(
         (computed.status === "REVIEWABLE" && baseline.status !== "REVIEWABLE") ||
         (computed.lowestBalance > baseline.lowestBalance &&
@@ -43,4 +46,17 @@ test("the engine does not invent a lower principal below the minimum", () => {
   const scenario = { ...DEFAULT_SCENARIO, principal: 1000, stipendDay: 20 };
   const { alternatives } = suggestAlternatives(scenario);
   assert.ok(!alternatives.some((item) => item.kind === "amount"));
+});
+
+test("reviewable scenarios never suggest a PAUSE outcome across supported dates", () => {
+  for (const stipendDay of [1, 5, 10, 15, 20, 25, 30]) {
+    for (const emiDay of [1, 5, 10, 15, 20, 25, 30]) {
+      const scenario = { ...DEFAULT_SCENARIO, stipendDay, emiDay };
+      const { baseline, alternatives } = suggestAlternatives(scenario);
+      if (baseline.status !== "REVIEWABLE") continue;
+      for (const option of alternatives) {
+        assert.equal(option.result.status, "REVIEWABLE");
+      }
+    }
+  }
 });
