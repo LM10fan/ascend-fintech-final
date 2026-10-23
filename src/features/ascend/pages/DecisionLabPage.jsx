@@ -520,7 +520,14 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                   <p className="asc-alternative-delta">
                     {option.result.lowestBalance > fullTerm.lowestBalance
                       ? `Projected minimum balance improves by ${money(Math.round((option.result.lowestBalance - fullTerm.lowestBalance) * 100) / 100)}.`
-                      : "Projected minimum balance does not increase; the advisory gate improves."}
+                      : "Projected minimum balance is unchanged."}
+                  </p>
+                  <p>
+                    Recurring monthly margin: {money(option.result.recurringMargin)}
+                    {" "}(currently {money(fullTerm.recurringMargin)}).
+                    {option.result.status !== fullTerm.status
+                      ? " The advisory status improves."
+                      : ""}
                   </p>
                   <button type="button" aria-label={`Try this scenario: ${option.label}`} onClick={() => commit({ ...scenario, ...option.changes })}>
                     Try this scenario
