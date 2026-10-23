@@ -512,7 +512,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                 <article className="asc-alternative-option" key={option.kind}>
                   <strong>{option.label}</strong>
                   <p>Advisory: {option.result.status} · Lowest projected balance: {money(option.result.lowestBalance)} (currently {money(fullTerm.lowestBalance)})</p>
-                  <button type="button" onClick={() => commit({ ...scenario, ...option.changes })}>
+                  <button type="button" aria-label={`Try this scenario: ${option.label}`} onClick={() => commit({ ...scenario, ...option.changes })}>
                     Try this scenario
                   </button>
                 </article>
