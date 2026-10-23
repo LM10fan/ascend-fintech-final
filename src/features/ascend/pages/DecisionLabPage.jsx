@@ -506,6 +506,9 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
           <div className="asc-eyebrow">WHAT CAN I CHANGE?</div>
           <h2>Explore a different repayment plan</h2>
           <p>Compare illustrative changes against the current three-cycle scenario. No change is applied automatically, and no result guarantees approval.</p>
+          {invalid && (
+            <p role="status">Correct the highlighted input before trying an alternative. These comparisons use the last valid scenario.</p>
+          )}
           {suggestions.alternatives.length ? (
             <div className="asc-alternative-options">
               {suggestions.alternatives.map((option) => (
