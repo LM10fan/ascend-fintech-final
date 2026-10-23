@@ -103,6 +103,7 @@ fireEvent.change(screen.getByLabelText("Monthly stipend"), {
   target: { value: "" },
 });
 assert.ok(screen.getByText(/Correct the highlighted input/));
+assert.ok(screen.getByText(/These comparisons use the last valid scenario/));
 const invalidAlternativeButtons = within(screen.getByRole("region", { name: "Explore safer alternatives" }))
   .queryAllByRole("button", { name: /^Try this scenario:/ });
 // Some scenarios have no qualifying alternatives; any visible actions must stay disabled.
