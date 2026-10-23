@@ -512,6 +512,16 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                 <article className="asc-alternative-option" key={option.kind}>
                   <strong>{option.label}</strong>
                   <p>Advisory: {option.result.status} · Lowest projected balance: {money(option.result.lowestBalance)} (currently {money(fullTerm.lowestBalance)})</p>
+                  <p className="asc-alternative-why">
+                    {option.kind === "date"
+                      ? "Changing the due date shifts repayment timing without reducing the installment amount."
+                      : `A smaller request lowers the modeled installment to ${money(option.result.terms.maxEmi)} (from ${money(fullTerm.terms.maxEmi)}).`}
+                  </p>
+                  <p className="asc-alternative-delta">
+                    {option.result.lowestBalance > fullTerm.lowestBalance
+                      ? `Projected minimum balance improves by ${money(Math.round((option.result.lowestBalance - fullTerm.lowestBalance) * 100) / 100)}.`
+                      : "Projected minimum balance does not increase; the advisory gate improves."}
+                  </p>
                   <button type="button" aria-label={`Try this scenario: ${option.label}`} onClick={() => commit({ ...scenario, ...option.changes })}>
                     Try this scenario
                   </button>
