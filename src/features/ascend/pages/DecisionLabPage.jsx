@@ -17,6 +17,7 @@ import {
   validateScenario,
 } from "../domain/cashflow.js";
 import { PROFILES, hasConsent } from "../data/demoStore.js";
+import { explainDecision } from "../domain/explain.js";
 import { downloadJson } from "../components/download.js";
 function dayLabel(day) {
   return day === 0 ? "before day 1" : `on day ${day}`;
@@ -34,6 +35,7 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
     [scenario, months],
   );
   const fullTerm = useMemo(() => simulate(scenario, { months: 3 }), [scenario]);
+  const explanation = useMemo(() => explainDecision(fullTerm), [fullTerm]);
   const explored = useMemo(
     () => simulate({ ...scenario, emiDay: proposedDay }, { months: 3 }),
     [scenario, proposedDay],
@@ -521,6 +523,15 @@ export function DecisionLabPage({ session, update, navigate, notify }) {
                   ? `The projected balance falls below ${money(POLICY.buffer)} ${dayLabel(fullTerm.firstBreach.day)}. The lowest point is ${money(fullTerm.lowestBalance)} ${dayLabel(fullTerm.lowestDay)}.`
                   : `All dated events preserve the ${money(POLICY.buffer)} buffer. The lowest balance is ${money(fullTerm.lowestBalance)} ${dayLabel(fullTerm.lowestDay)}.`}
             </p>
+            <div className="asc-explanation-list" aria-label="Why this result">
+              {explanation.reasons.map((reason) => (
+                <div className="asc-explanation-item" key={reason.code}>
+                  <strong>{reason.heading}</strong>
+                  <p>{reason.detail}</p>
+                  <small>{reason.code}</small>
+                </div>
+              ))}
+            </div>
             <div className="asc-reason-code">
               Reason <code data-testid="reason-code">{fullTerm.reason}</code>
             </div>
