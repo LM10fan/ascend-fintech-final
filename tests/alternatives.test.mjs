@@ -68,6 +68,7 @@ test("alternatives never turn a passing affordability gate into a failure", () =
         const scenario = { ...DEFAULT_SCENARIO, stipendDay, emiDay, principal };
         const { baseline, alternatives } = suggestAlternatives(scenario);
         for (const { result } of alternatives) {
+          assert.ok(result.recurringMargin >= baseline.recurringMargin, "monthly margin worsened");
           if (baseline.structuralPass) {
             assert.equal(result.structuralPass, true, "monthly margin gate regressed");
           }
