@@ -20,6 +20,12 @@ try {
       assert.ok((await page.locator("main").innerText()).trim().length > 50, route + " should render content");
       assert.ok(await page.locator('nav[aria-label="Main navigation"] a[aria-current="page"]').count() === 1);
       await page.screenshot({ path: `artifacts/browser-qa/${viewport.width}-${route.slice(1)}.png`, fullPage: true, animations: "disabled" });
+      const touchTargets = await page.locator('nav[aria-label="Main navigation"] a').evaluateAll((nodes) => nodes.map((node) => ({ text: node.textContent.trim(), width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
+      if (viewport.width <= 390) {
+        for (const target of touchTargets) {
+          assert.ok(target.height >= 24 && target.width >= 24, `Navigation touch target too small: ${target.text} (${target.width}x${target.height})`);
+        }
+      }
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       assert.ok(overflow <= 2, route + " horizontal overflow at " + viewport.width + "px: " + overflow);
     }
