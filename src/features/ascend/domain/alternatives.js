@@ -28,7 +28,10 @@ export function suggestAlternatives(scenario) {
     });
   }
   const improvements = candidates.filter(({ result }) => {
-    // Never present a worse advisory status as an improvement.
+    // Preserve every passing affordability gate, not only the combined status.
+    // A better cash balance must not conceal a new monthly-budget deficit.
+    if (baseline.structuralPass && !result.structuralPass) return false;
+    if (baseline.timingPass && !result.timingPass) return false;
     if (baseline.status === "REVIEWABLE" && result.status !== "REVIEWABLE") return false;
     const newlyReviewable = baseline.status !== "REVIEWABLE" && result.status === "REVIEWABLE";
     const strongerBuffer = result.lowestBalance > baseline.lowestBalance &&
