@@ -3123,3 +3123,12 @@
 .asc-explanation-item strong { display: block; font-weight: 700; }
 .asc-explanation-item p { margin: 5px 0; }
 .asc-explanation-item small { opacity: .8; font-size: .72rem; letter-spacing: .02em; }
+
+/* ASCEND 2.0 scenario recommendations */
+.asc-alternatives { grid-column: 1 / -1; padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
+.asc-alternatives h2 { margin: 8px 0; }
+.asc-alternative-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; margin-top: 16px; }
+.asc-alternative-option { padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--sand); }
+.asc-alternative-option p { margin: 8px 0 14px; }
+.asc-alternative-option button { border: 0; border-radius: 8px; background: var(--green); color: #fff; padding: 10px 14px; cursor: pointer; }
+.asc-alternative-option button:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
