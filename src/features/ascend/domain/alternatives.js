@@ -36,7 +36,9 @@ export function suggestAlternatives(scenario) {
     const newlyReviewable = baseline.status !== "REVIEWABLE" && result.status === "REVIEWABLE";
     const strongerBuffer = result.lowestBalance > baseline.lowestBalance &&
       result.recurringMargin >= baseline.recurringMargin;
-    return newlyReviewable || strongerBuffer;
+    // A newly reviewable outcome must still not make the recurring margin worse.
+    // This prevents a status improvement from hiding an affordability trade-off.
+    return (newlyReviewable && result.recurringMargin >= baseline.recurringMargin) || strongerBuffer;
   });
   improvements.sort((a, b) =>
     Number(b.result.status === "REVIEWABLE") - Number(a.result.status === "REVIEWABLE") ||
