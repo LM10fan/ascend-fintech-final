@@ -175,8 +175,9 @@ assert.ok(screen.getByText(/Reviewer view/));
 fireEvent.click(screen.getByRole("button", { name: /Delay to 20th/ }));
 const alternativesRegion = screen.getByRole("region", { name: "Explore safer alternatives" });
 assert.ok(within(alternativesRegion).getByText(/Explore a different repayment plan/));
-const tryButtons = within(alternativesRegion).queryAllByRole("button", { name: "Try this scenario" });
+const tryButtons = within(alternativesRegion).queryAllByRole("button", { name: /^Try this scenario:/ });
 assert.ok(tryButtons.length > 0, "late stipend should produce an actionable alternative");
+assert.ok(tryButtons.every((button) => button.getAttribute("aria-label")?.includes("Move EMI") || button.getAttribute("aria-label")?.includes("Reduce request")));
 const beforeRecommendation = screen.getByTestId("lowest-balance").textContent;
 fireEvent.click(tryButtons[0]);
 assert.notEqual(
