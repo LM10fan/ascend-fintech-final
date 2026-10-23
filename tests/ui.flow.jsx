@@ -177,7 +177,8 @@ const alternativesRegion = screen.getByRole("region", { name: "Explore safer alt
 assert.ok(within(alternativesRegion).getByText(/Explore a different repayment plan/));
 const tryButtons = within(alternativesRegion).queryAllByRole("button", { name: /^Try this scenario:/ });
 assert.ok(tryButtons.length > 0, "late stipend should produce an actionable alternative");
-assert.ok(within(alternativesRegion).getAllByText(/Projected minimum balance improves by|Projected minimum balance does not increase/).length > 0);
+assert.ok(within(alternativesRegion).getAllByText(/Projected minimum balance improves by|Projected minimum balance is unchanged/).length > 0);
+assert.ok(within(alternativesRegion).getAllByText(/Recurring monthly margin:/).length > 0, "every displayed alternative explains the affordability trade-off");
 assert.ok(within(alternativesRegion).getAllByText(/Changing the due date|A smaller request lowers/).length > 0);
 assert.ok(tryButtons.every((button) => button.getAttribute("aria-label")?.includes("Move EMI") || button.getAttribute("aria-label")?.includes("Reduce request")));
 const beforeRecommendation = screen.getByTestId("lowest-balance").textContent;
