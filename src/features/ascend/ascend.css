@@ -3132,3 +3132,20 @@
 .asc-alternative-option p { margin: 8px 0 14px; }
 .asc-alternative-option button { border: 0; border-radius: 8px; background: var(--green); color: #fff; padding: 10px 14px; cursor: pointer; }
 .asc-alternative-option button:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+
+/* Mobile-safe ASCEND 2.0 recommendation cards */
+.ascend-app .asc-alternatives { min-width: 0; overflow-wrap: anywhere; }
+.ascend-app .asc-alternative-options { min-width: 0; }
+.ascend-app .asc-alternative-option { min-width: 0; }
+.ascend-app .asc-alternative-why { color: var(--body); }
+.ascend-app .asc-alternative-delta { font-weight: 650; color: var(--ink); }
+.ascend-app .asc-alternative-option button { min-height: 44px; max-width: 100%; }
+@media (max-width: 640px) {
+  .ascend-app .asc-alternatives { padding: 16px; border-radius: 14px; }
+  .ascend-app .asc-alternative-options { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .ascend-app .asc-alternative-option { padding: 14px; }
+  .ascend-app .asc-alternative-option button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ascend-app .asc-alternative-option button { transition: none; }
+}
