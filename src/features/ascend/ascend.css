@@ -3116,3 +3116,10 @@
     break-inside: avoid;
   }
 }
+
+/* ASCEND 2.0: distinct, accessible explanations for each advisory gate. */
+.asc-explanation-list { display: grid; gap: 10px; margin: 16px 0; }
+.asc-explanation-item { padding: 12px 14px; border: 1px solid rgba(255,255,255,.25); border-radius: 12px; }
+.asc-explanation-item strong { display: block; font-weight: 700; }
+.asc-explanation-item p { margin: 5px 0; }
+.asc-explanation-item small { opacity: .8; font-size: .72rem; letter-spacing: .02em; }
