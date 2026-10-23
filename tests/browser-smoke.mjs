@@ -63,6 +63,13 @@ try {
     assert.equal(new URL(page.url()).pathname, "/assessment");
     await page.getByRole("link", { name: /Credit Ladder/ }).click();
     assert.equal(new URL(page.url()).pathname, "/credit");
+    // Browser reload must retain consent and the chosen financial scenario.
+    await page.goto(base + "/decision-lab");
+    const savedMinimum = await page.getByTestId("lowest-balance").innerText();
+    await page.reload({ waitUntil: "networkidle" });
+    assert.equal(await page.getByTestId("lowest-balance").innerText(), savedMinimum, "scenario must survive reload");
+    assert.ok(await page.getByText(/Consent active/).count() > 0, "consent should persist across navigation and reload");
+
     await context.close();
   }
   assert.deepEqual(errors, [], "No uncaught browser errors");
