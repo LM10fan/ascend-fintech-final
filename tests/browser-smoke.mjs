@@ -40,6 +40,29 @@ try {
     assert.equal(new URL(page.url()).pathname, "/decision-lab");
     await page.goBack();
     assert.equal(new URL(page.url()).pathname, "/apply");
+    // Applicant journey: consent is mandatory before the decision lab unlocks.
+    await page.goto(base + "/apply");
+    const enterLab = page.getByRole("button", { name: /^Enter Decision Lab/ });
+    assert.equal(await enterLab.isDisabled(), true, "Decision Lab must be consent gated");
+    await page.getByLabel(/Use my historical spending data/).check();
+    await page.getByLabel(/Assess purchase affordability using these inputs/).check();
+    await page.getByRole("button", { name: /Record selected consents/ }).click();
+    assert.equal(await enterLab.isEnabled(), true, "Consent should unlock the lab");
+    await enterLab.click();
+    assert.equal(new URL(page.url()).pathname, "/decision-lab");
+    assert.ok((await page.getByTestId("lowest-balance").innerText()).includes("1,100"));
+    await page.getByRole("button", { name: /Delay to 20th/ }).click();
+    assert.ok((await page.getByTestId("lowest-balance").innerText()).includes("2,470"), "late stipend should expose the cash-flow breach");
+    const alternatives = page.getByRole("region", { name: "Explore safer alternatives" });
+    const tryAlternative = alternatives.getByRole("button", { name: /^Try this scenario:/ }).first();
+    assert.ok(await tryAlternative.count() > 0, "late stipend should offer a qualifying alternative");
+    const before = await page.getByTestId("lowest-balance").innerText();
+    await tryAlternative.click();
+    assert.notEqual(await page.getByTestId("lowest-balance").innerText(), before, "recommendation should update the projection");
+    await page.getByRole("link", { name: /Assessment/ }).click();
+    assert.equal(new URL(page.url()).pathname, "/assessment");
+    await page.getByRole("link", { name: /Credit Ladder/ }).click();
+    assert.equal(new URL(page.url()).pathname, "/credit");
     await context.close();
   }
   assert.deepEqual(errors, [], "No uncaught browser errors");
